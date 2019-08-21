@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"runtime"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -341,9 +342,19 @@ func (c *consulRegistry) GetService(name string) ([]*registry.Service, error) {
 			continue
 		}
 
+		port := s.Service.Port
+		for _, tag := range s.Service.Tags {
+			if strings.Contains(tag, "gRPC.port") {
+				paramMap := strings.Split(tag, ",")
+				if len(paramMap) > 0 {
+					port, _ = strconv.Atoi(paramMap[1])
+				}
+			}
+		}
+
 		svc.Nodes = append(svc.Nodes, &registry.Node{
 			Id:       id,
-			Address:  fmt.Sprintf("%s:%d", address, s.Service.Port),
+			Address:  fmt.Sprintf("%s:%d", address, port),
 			Metadata: decodeMetadata(s.Service.Tags),
 		})
 	}
